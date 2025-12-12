@@ -1,7 +1,18 @@
-from nexus_factory import build_nexus_factory
+"""Main entry point for running the NexusPrime factory."""
+
+from __future__ import annotations
+
+from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 
+# Load environment variables
+load_dotenv()
+
+from nexusprime import build_nexus_factory
+
+
 def run_simulation():
+    """Run the NexusPrime factory with a sample input."""
     print("### BOOTING NEXUSPRIME FACTORY ###")
     app = build_nexus_factory()
     
@@ -19,6 +30,7 @@ def run_simulation():
     print(f"Final Status: {final_state.get('current_status')}")
     print(f"Quality Score: {final_state.get('quality_score')}")
     print(f"Env Mode: {final_state.get('env_mode')}")
+
 
 if __name__ == "__main__":
     run_simulation()
