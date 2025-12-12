@@ -6,7 +6,7 @@ import os
 from typing import Any, Dict
 
 from .base import Agent
-from ..core.llm import call_llm
+from ..core.llm_router import get_llm_router
 from ..core.state import NexusFactoryState
 from ..utils.tokens import update_token_usage
 from ..utils.status import save_status_snapshot
@@ -40,8 +40,10 @@ class DevSquadAgent(Agent):
         )
         
         try:
-            code_content, usage = call_llm(
-                prompt,
+            router = get_llm_router()
+            code_content, usage = router.call(
+                prompt=prompt,
+                agent_name="dev_squad",
                 system_prompt="You are a senior Python developer. Write clean, production-ready code."
             )
             
