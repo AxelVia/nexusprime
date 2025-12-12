@@ -5,7 +5,7 @@
 The LLM Router has been refactored to support multiple AI APIs instead of relying solely on GitHub Models API. This enables the use of:
 
 - **Anthropic API** for Claude Sonnet 4
-- **Google AI API** for Gemini 3 Pro
+- **Google AI API** for Gemini 2.0 Flash
 - **GitHub Models API** for Grok 3 and GPT-5
 
 ## Architecture
@@ -36,6 +36,7 @@ The LLM Router has been refactored to support multiple AI APIs instead of relyin
 - **SDK**: `google-generativeai`
 - **Authentication**: `GOOGLE_API_KEY`
 - **Model**: `gemini-2.0-flash-exp` (latest available Gemini model)
+- **Note**: The original specification requested `gemini-3-pro`, but as this model doesn't exist yet, we use `gemini-2.0-flash-exp` which is the latest available Gemini model.
 
 #### 3. GitHub Models API (Grok 3, GPT-5)
 
@@ -57,7 +58,7 @@ GITHUB_TOKEN=xxx              # For GitHub Models API (Grok, GPT-5)
 ANTHROPIC_API_KEY=xxx         # For Anthropic API (Claude Sonnet 4)
 
 # Required only when using Gemini models
-GOOGLE_API_KEY=xxx            # For Google AI API (Gemini 3 Pro)
+GOOGLE_API_KEY=xxx            # For Google AI API (Gemini 2.0 Flash)
 ```
 
 ## Implementation Details
@@ -72,7 +73,7 @@ GOOGLE_API_KEY=xxx            # For Google AI API (Gemini 3 Pro)
 2. **`_call_google()`**: Handles calls to Google AI API
    - Uses `google-generativeai` SDK
    - Lazy initialization of the SDK
-   - Fallback from `gemini-3-pro` to `gemini-2.5-pro` if needed
+   - Direct model instantiation with `gemini-2.0-flash-exp`
    - Handles token counting when available
 
 3. **`_call_github_models()`**: Handles calls to GitHub Models API
