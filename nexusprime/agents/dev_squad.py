@@ -33,11 +33,31 @@ class DevSquadAgent(Agent):
         spec = state.get("spec_document", "")
         env = state.get("env_mode", "DEV")
         
+        # Check if this is a revision (Council has provided feedback)
+        review_comments = state.get("review_comments", "")
+        previous_code = state.get("previous_code", "")
+        
         # Generate code using LLM
-        prompt = (
-            f"Write the complete Python code for the following specification. "
-            f"Return ONLY the code, no markdown.\n\nSPEC:\n{spec}"
-        )
+        if review_comments or previous_code:
+            # This is a revision - include feedback and previous code
+            prompt = f"""Voici le code actuel et les feedbacks du Council. Améliore-le en corrigeant les problèmes identifiés.
+
+CODE ACTUEL:
+{previous_code}
+
+FEEDBACKS DU COUNCIL:
+{review_comments}
+
+SPEC ORIGINALE:
+{spec}
+
+Retourne UNIQUEMENT le code Python amélioré, sans markdown."""
+        else:
+            # First generation
+            prompt = (
+                f"Write the complete Python code for the following specification. "
+                f"Return ONLY the code, no markdown.\n\nSPEC:\n{spec}"
+            )
         
         try:
             router = get_llm_router()
@@ -73,7 +93,8 @@ class DevSquadAgent(Agent):
             state_update = {
                 "current_status": "Agent: Dev Squad (Coding)",
                 "file_system_state": {file_path: "generated_by_gemini"},
-                "total_tokens": new_tokens
+                "total_tokens": new_tokens,
+                "previous_code": code_content  # Store code for Council review
             }
             
             save_status_snapshot({**state, **state_update})

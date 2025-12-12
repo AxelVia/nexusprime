@@ -23,3 +23,5 @@ class NexusFactoryState(TypedDict):
     review_comments: str                                  # Feedback from Council
     memory_context: str                                   # Retrieved lessons from NexusMemory
     total_tokens: Dict[str, int]                          # Token Usage Tracking
+    previous_code: str                                    # Code from previous version
+    previous_reviews: List[Dict]                          # Previous reviews from Council

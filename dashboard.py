@@ -123,32 +123,64 @@ def parse_council_data(status: dict) -> tuple:
         status: Status dictionary
     
     Returns:
-        Tuple of (judges_list, arbitrator_dict)
+        Tuple of (judges_list, arbitrator_dict, previous_score)
     """
     # Try to parse council report if available
     council_report = status.get("council_report", "")
     quality_score = status.get("quality_score", 0)
+    previous_reviews = status.get("previous_reviews", [])
     
-    # For now, return placeholder data
-    # In a real implementation, you'd parse the report text
     judges = None
     arbitrator = None
+    previous_score = None
     
-    if quality_score > 0 and council_report:
-        # Simple parsing - in production, would be more sophisticated
-        judges = [
-            {"name": "Grok", "model": "grok-3", "score": quality_score - 5, "verdict": "APPROVE" if quality_score > 75 else "REJECT"},
-            {"name": "Gemini", "model": "gemini-2.5-pro", "score": quality_score, "verdict": "APPROVE" if quality_score > 75 else "REJECT"},
-            {"name": "Claude", "model": "claude-sonnet-4", "score": quality_score + 3, "verdict": "APPROVE" if quality_score > 75 else "NEEDS_WORK"},
-        ]
+    if quality_score > 0:
+        # Use previous_reviews if available, otherwise parse from report
+        if previous_reviews:
+            judges = []
+            for review in previous_reviews:
+                reviewer = review.get("reviewer", "Unknown")
+                score = review.get("score", 0)
+                verdict = "APPROVE" if score > 75 else "NEEDS_WORK" if score > 50 else "REJECT"
+                
+                judges.append({
+                    "name": reviewer,
+                    "model": review.get("model", "unknown"),
+                    "score": score,
+                    "verdict": verdict,
+                    "concerns": review.get("concerns", [])
+                })
+        else:
+            # Fallback to placeholder data
+            judges = [
+                {"name": "GPT-5", "model": "gpt-5", "score": quality_score - 2, "verdict": "APPROVE" if quality_score > 75 else "REJECT", "concerns": []},
+                {"name": "Gemini", "model": "gemini-2.5-pro", "score": quality_score, "verdict": "APPROVE" if quality_score > 75 else "REJECT", "concerns": []},
+                {"name": "Claude", "model": "claude-sonnet-4", "score": quality_score + 2, "verdict": "APPROVE" if quality_score > 75 else "NEEDS_WORK", "concerns": []},
+            ]
+        
+        # Calculate previous score if available
+        feedback_loop = status.get("feedback_loop_count", 0)
+        if feedback_loop > 1:
+            # Estimate previous score (in real scenario, this would be stored)
+            previous_score = quality_score - 5  # Simple estimation
+        
+        # Extract arbitration reasoning from report
+        reasoning = "Synthesized review from multiple independent judges."
+        if council_report and "FINAL ARBITRATION" in council_report:
+            # Try to extract reasoning from report
+            lines = council_report.split('\n')
+            for i, line in enumerate(lines):
+                if "Reasoning:" in line:
+                    reasoning = line.split("Reasoning:", 1)[1].strip()
+                    break
         
         arbitrator = {
             "score": quality_score,
-            "reasoning": f"Synthesized review from 3 independent judges. Overall quality assessment based on consensus.",
+            "reasoning": reasoning,
             "verdict": "APPROVE" if quality_score > 75 else "NEEDS_WORK"
         }
     
-    return judges, arbitrator
+    return judges, arbitrator, previous_score
 
 
 def build_log_entries(status: dict) -> list:
@@ -301,7 +333,7 @@ with tab1:
                 "Feedback Loops",
                 f"{loop_count}/5",
                 "🔄",
-                progress=(loop_count / 5) * 100,
+                progress=min(100, (loop_count / 5) * 100),  # Cap at 100%
                 color="#6366f1"
             ),
             unsafe_allow_html=True
@@ -366,9 +398,9 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
     
-    judges, arbitrator = parse_council_data(status if status else {})
+    judges, arbitrator, previous_score = parse_council_data(status if status else {})
     st.markdown(
-        render_council_section(judges, arbitrator),
+        render_council_section(judges, arbitrator, previous_score),
         unsafe_allow_html=True
     )
     
