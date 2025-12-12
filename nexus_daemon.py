@@ -89,12 +89,17 @@ def initialize_status(prompt: str, env_mode: str) -> None:
         env_mode: Environment mode (DEV or PROD)
     """
     try:
+        # Truncate prompt for excerpt if needed
+        prompt_excerpt = prompt[:200]
+        if len(prompt) > 200:
+            prompt_excerpt += "..."
+        
         initial_status = {
             "current_status": "INITIALIZING",
             "env_mode": env_mode,
             "quality_score": 0,
             "feedback_loop_count": 0,
-            "spec_excerpt": f"Request: {prompt[:200]}...",
+            "spec_excerpt": f"Request: {prompt_excerpt}",
             "last_message": "Factory starting...",
             "total_tokens": {
                 "prompt_tokens": 0,
