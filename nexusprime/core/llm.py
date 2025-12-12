@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from typing import Dict, Tuple
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -14,24 +15,28 @@ logger = get_logger(__name__)
 
 
 _llm_instance: ChatGoogleGenerativeAI | None = None
+_llm_lock = threading.Lock()
 
 
 def get_llm() -> ChatGoogleGenerativeAI:
     """
-    Get or create the LLM instance.
+    Get or create the LLM instance (thread-safe).
     
     Returns:
         Configured ChatGoogleGenerativeAI instance
     """
     global _llm_instance
     if _llm_instance is None:
-        settings = get_settings()
-        _llm_instance = ChatGoogleGenerativeAI(
-            model=settings.llm_model,
-            temperature=settings.llm_temperature,
-            convert_system_message_to_human=True
-        )
-        logger.info(f"LLM initialized: {settings.llm_model} (temp={settings.llm_temperature})")
+        with _llm_lock:
+            # Double-check locking pattern
+            if _llm_instance is None:
+                settings = get_settings()
+                _llm_instance = ChatGoogleGenerativeAI(
+                    model=settings.llm_model,
+                    temperature=settings.llm_temperature,
+                    convert_system_message_to_human=True
+                )
+                logger.info(f"LLM initialized: {settings.llm_model} (temp={settings.llm_temperature})")
     return _llm_instance
 
 

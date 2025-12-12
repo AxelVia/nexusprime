@@ -179,32 +179,30 @@ class NexusMemory:
             logger.warning("No lessons with embeddings found, falling back to keywords")
             return self._retrieve_with_keywords(query, top_k)
         
-        # Compute similarities
-        similarities = []
+        # Compute similarities efficiently
         query_emb_np = np.array(query_embedding)
+        lesson_embeddings = np.array([l["embedding"] for l in lessons_with_embeddings])
         
-        for lesson in lessons_with_embeddings:
-            lesson_emb = np.array(lesson["embedding"])
-            # Cosine similarity
-            similarity = np.dot(query_emb_np, lesson_emb) / (
-                np.linalg.norm(query_emb_np) * np.linalg.norm(lesson_emb)
-            )
-            similarities.append((lesson, float(similarity)))
+        # Vectorized cosine similarity computation
+        # cosine_sim = dot(a, b) / (norm(a) * norm(b))
+        dot_products = np.dot(lesson_embeddings, query_emb_np)
+        query_norm = np.linalg.norm(query_emb_np)
+        lesson_norms = np.linalg.norm(lesson_embeddings, axis=1)
+        similarities = dot_products / (lesson_norms * query_norm)
         
-        # Sort by similarity (descending)
-        similarities.sort(key=lambda x: x[1], reverse=True)
+        # Get top_k indices
+        top_indices = np.argsort(similarities)[::-1][:top_k]
         
-        # Take top_k
-        top_lessons = similarities[:top_k]
-        
-        if not top_lessons:
+        if len(top_indices) == 0:
             return "No relevant lessons found."
         
         formatted = "### PREVIOUS LESSONS LEARNED:\n"
-        for lesson, score in top_lessons:
+        for idx in top_indices:
+            lesson = lessons_with_embeddings[idx]
+            score = float(similarities[idx])
             formatted += f"- **{lesson['topic']}** (similarity: {score:.2f}): {lesson['solution']}\n"
         
-        logger.debug(f"Retrieved {len(top_lessons)} lessons using embeddings")
+        logger.debug(f"Retrieved {len(top_indices)} lessons using embeddings")
         return formatted
     
     def _retrieve_with_keywords(self, query: str, top_k: int) -> str:

@@ -54,7 +54,7 @@ def validate_generated_code(code: str) -> Tuple[bool, List[str]]:
         (r'\bexec\s*\(', "exec() - Code execution"),
         (r'\b__import__\s*\(', "__import__() - Dynamic imports"),
         (r'\bcompile\s*\(', "compile() - Code compilation"),
-        (r'\bopen\s*\([^)]*[\'"]w', "open() with write mode - File writing"),
+        (r'\bopen\s*\([^)]*[\'"][wWaA]', "open() with write/append mode - File writing"),
         (r'\bshutil\.rmtree\b', "shutil.rmtree() - Recursive deletion"),
         (r'\bos\.remove\b', "os.remove() - File deletion"),
         (r'\bos\.unlink\b', "os.unlink() - File deletion"),

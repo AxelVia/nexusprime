@@ -95,4 +95,4 @@ eval('1 + 1')
         code = "with open('file.txt', 'w') as f: f.write('test')"
         is_safe, warnings = validate_generated_code(code)
         assert is_safe is False
-        assert any("write mode" in w for w in warnings)
+        assert any("write/append mode" in w or "File writing" in w for w in warnings)

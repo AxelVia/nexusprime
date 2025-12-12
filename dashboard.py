@@ -132,8 +132,8 @@ def get_status_icon(text):
     return ("⏳", "Standby", 0)
 
 # --- AUTO-REFRESH ---
-# Refresh every 2 seconds (2000ms)
-st_autorefresh(interval=2000, limit=None, key="nexus_refresh")
+# Refresh every 2 seconds (2000ms), max 1000 refreshes per session
+st_autorefresh(interval=2000, limit=1000, key="nexus_refresh")
 
 # --- MAIN DASHBOARD ---
 
