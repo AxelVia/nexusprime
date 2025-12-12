@@ -23,8 +23,8 @@ class LLMProvider(str, Enum):
     # Anthropic API
     CLAUDE_SONNET_4 = "claude-sonnet-4-20250514"
     
-    # Google AI API (using latest available Gemini model)
-    GEMINI_3_PRO = "gemini-2.0-flash-exp"
+    # Google AI API
+    GEMINI_3_PRO = "gemini-3-pro-preview"
     
     # GitHub Models API
     GROK_3 = "azureml-xai/grok-3"

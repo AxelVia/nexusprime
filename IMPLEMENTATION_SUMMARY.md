@@ -15,7 +15,7 @@ The router now supports three different APIs:
 | API | Models | Agents Using It |
 |-----|--------|----------------|
 | **Anthropic API** | Claude Sonnet 4 (`claude-sonnet-4-20250514`) | `product_owner`, `dev_squad`, `council_claude` |
-| **Google AI API** | Gemini 2.0 Flash (`gemini-2.0-flash-exp`) | `tech_lead`, `council_gemini` |
+| **Google AI API** | Gemini 3 Pro Preview (`gemini-3-pro-preview`) | `tech_lead`, `council_gemini` |
 | **GitHub Models API** | Grok 3 (`azureml-xai/grok-3`), GPT-5 (`azure-openai/gpt-5`) | `council_grok`, `council_gpt` |
 
 ### 2. Environment Variables ✅
@@ -141,7 +141,7 @@ The `call()` method intelligently routes to the appropriate API based on the mod
 ```python
 if model == "claude-sonnet-4-20250514":
     return self._call_anthropic(...)
-elif model == "gemini-2.0-flash-exp":
+elif model == "gemini-3-pro-preview":
     return self._call_google(...)
 elif model in ["azureml-xai/grok-3", "azure-openai/gpt-5"]:
     return self._call_github_models(...)
@@ -165,18 +165,11 @@ def _init_google_genai(self):
     return self._google_genai
 ```
 
-## 📝 Model Selection Note
+## 📝 Model Selection
 
-**Original Specification**: Use `gemini-3-pro` or `gemini-2.5-pro`
+**Model Used**: `gemini-3-pro-preview`
 
-**Implementation**: Uses `gemini-2.0-flash-exp`
-
-**Reason**: `gemini-3-pro` doesn't exist yet. We chose `gemini-2.0-flash-exp` as it's:
-- The latest available Gemini model
-- More performant than `gemini-2.5-pro`
-- Avoids unnecessary fallback logic (per code review feedback)
-
-This is documented in `LLM_ROUTER_REFACTORING.md` for future reference.
+This is the Gemini 3 Pro Preview model available through the Google AI API, which provides the latest capabilities from Google's Gemini model family.
 
 ## 🚀 Deployment Checklist
 
