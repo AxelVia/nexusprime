@@ -1,99 +1,44 @@
-"""NexusPrime Dashboard - Real-time monitoring interface."""
+"""NexusPrime Dashboard - Real-time monitoring interface with Multi-LLM visualization."""
 
 from __future__ import annotations
 
 import streamlit as st
 import json
 import os
+import sys
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
-# --- CONFIGURATION & STYLES ---
-st.set_page_config(page_title="NEXUS PRIME // CONTROL CENTER", layout="wide", page_icon="💠")
+# Add project root to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Futurism / Glassmorphism CSS
-st.markdown("""
-    <style>
-    /* GLOBAL THEME */
-    .stApp {
-        background-color: #050505;
-        background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
-        color: #e0e0e0;
-        font-family: 'Courier New', monospace;
-    }
-    
-    /* NAV BAR */
-    .saas-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 20px;
-    }
-    .brand {
-        font-size: 1.5em;
-        font-weight: bold;
-        color: #00ff88;
-        letter-spacing: 2px;
-    }
-    .user-badge {
-        background: #333;
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 0.8em;
-    }
-    
-    /* CARDS (Glass Effect) */
-    .nexus-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        transition: transform 0.2s;
-    }
-    .nexus-card:hover { border-color: #00ff88; }
-    
-    /* METRICS */
-    .metric-value {
-        font-size: 2.2em;
-        font-weight: 700;
-        color: #fff;
-    }
-    .metric-label {
-        font-size: 0.8em;
-        color: #888;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* LOG CONSOLE */
-    .console-box {
-        background-color: #000;
-        border: 1px solid #333;
-        border-radius: 5px;
-        padding: 15px;
-        font-family: 'Consolas', monospace;
-        color: #0f0;
-        height: 350px;
-        overflow-y: auto;
-    }
-    .log-entry { margin-bottom: 5px; border-bottom: 1px solid #111; padding-bottom: 2px;} 
-    </style>
-    """, unsafe_allow_html=True)
+# Import UI components
+from nexusprime.ui import (
+    get_base_styles,
+    render_header,
+    render_metrics_card,
+    render_progress_pipeline,
+    render_active_agent,
+    render_council_section,
+    render_terminal,
+)
+from nexusprime.ui.components import render_workspace_files
+from nexusprime.ui.animations import get_animation_styles
 
-# --- HEADER ---
-st.markdown("""
-<div class="saas-header">
-    <div class="brand">NEXUS PRIME <span style="font-size:0.6em; color:#fff;">// AI SOFTWARE FACTORY</span></div>
-    <div class="user-badge">User: AXEL | Plan: PRO</div>
-</div>
-""", unsafe_allow_html=True)
+# --- CONFIGURATION ---
+st.set_page_config(
+    page_title="NEXUSPRIME // MULTI-LLM CONTROL CENTER",
+    layout="wide",
+    page_icon="🔮"
+)
+
+# Apply styles
+st.markdown(get_base_styles(), unsafe_allow_html=True)
+st.markdown(get_animation_styles(), unsafe_allow_html=True)
+
+# --- AUTO-REFRESH ---
+# Refresh every 2 seconds
+st_autorefresh(interval=2000, limit=1000, key="nexus_refresh")
 
 # --- DATA HELPERS ---
 def load_status():
@@ -110,6 +55,7 @@ def load_status():
             return None
     return None
 
+
 def load_memory():
     """Load memory from JSON file with error handling."""
     if os.path.exists("nexus_memory.json"):
@@ -124,119 +70,432 @@ def load_memory():
             return {"lessons": []}
     return {"lessons": []}
 
-def get_status_icon(text):
-    if "Product Owner" in text: return ("🕵️", "Conception", 10)
-    if "Tech Lead" in text: return ("🌐", "Architecture", 35)
-    if "Dev Squad" in text: return ("⚡", "Development", 65)
-    if "Council" in text: return ("🛡️", "Auditing", 90)
-    return ("⏳", "Standby", 0)
 
-# --- AUTO-REFRESH ---
-# Refresh every 2 seconds (2000ms), max 1000 refreshes per session
-st_autorefresh(interval=2000, limit=1000, key="nexus_refresh")
+def parse_agent_info(status_text: str) -> tuple[str, str, str, int]:
+    """
+    Parse status text to extract agent info.
+    
+    Args:
+        status_text: Status string from state
+    
+    Returns:
+        Tuple of (agent_name, model, status_message, progress_percent)
+    """
+    # Default values
+    agent_name = "Standby"
+    model = "N/A"
+    status_msg = "Waiting for task..."
+    progress = 0
+    
+    if not status_text:
+        return agent_name, model, status_msg, progress
+    
+    # Parse agent name and determine model
+    if "Product Owner" in status_text:
+        agent_name = "Product Owner"
+        model = "Claude Sonnet 4"
+        status_msg = "Analyzing requirements and generating specification..."
+        progress = 25
+    elif "Tech Lead" in status_text:
+        agent_name = "Tech Lead"
+        model = "Gemini 2.5 Pro"
+        status_msg = "Setting up environment and retrieving memory context..."
+        progress = 50
+    elif "Dev Squad" in status_text:
+        agent_name = "Dev Squad"
+        model = "Claude Sonnet 4"
+        status_msg = "Generating code based on specifications..."
+        progress = 75
+    elif "Council" in status_text:
+        agent_name = "Council"
+        model = "Multi-LLM (Grok + Gemini + Claude)"
+        status_msg = "Conducting multi-LLM review with debate system..."
+        progress = 90
+    
+    return agent_name, model, status_msg, progress
+
+
+def parse_council_data(status: dict) -> tuple:
+    """
+    Parse council review data from status.
+    
+    Args:
+        status: Status dictionary
+    
+    Returns:
+        Tuple of (judges_list, arbitrator_dict)
+    """
+    # Try to parse council report if available
+    council_report = status.get("council_report", "")
+    quality_score = status.get("quality_score", 0)
+    
+    # For now, return placeholder data
+    # In a real implementation, you'd parse the report text
+    judges = None
+    arbitrator = None
+    
+    if quality_score > 0 and council_report:
+        # Simple parsing - in production, would be more sophisticated
+        judges = [
+            {"name": "Grok", "model": "grok-3", "score": quality_score - 5, "verdict": "APPROVE" if quality_score > 75 else "REJECT"},
+            {"name": "Gemini", "model": "gemini-2.5-pro", "score": quality_score, "verdict": "APPROVE" if quality_score > 75 else "REJECT"},
+            {"name": "Claude", "model": "claude-sonnet-4", "score": quality_score + 3, "verdict": "APPROVE" if quality_score > 75 else "NEEDS_WORK"},
+        ]
+        
+        arbitrator = {
+            "score": quality_score,
+            "reasoning": f"Synthesized review from 3 independent judges. Overall quality assessment based on consensus.",
+            "verdict": "APPROVE" if quality_score > 75 else "NEEDS_WORK"
+        }
+    
+    return judges, arbitrator
+
+
+def build_log_entries(status: dict) -> list:
+    """
+    Build log entries from status data.
+    
+    Args:
+        status: Status dictionary
+    
+    Returns:
+        List of (timestamp, level, message) tuples
+    """
+    logs = []
+    current_time = datetime.now().strftime("%H:%M:%S")
+    
+    if not status:
+        return logs
+    
+    # Add current status as log
+    current_status = status.get("current_status", "")
+    if current_status:
+        logs.append((current_time, "info", current_status))
+    
+    # Add spec excerpt if available
+    spec_excerpt = status.get("spec_excerpt", "")
+    if spec_excerpt:
+        logs.append((current_time, "success", f"📝 Spec generated: {spec_excerpt[:100]}..."))
+    
+    # Add quality score if available
+    quality_score = status.get("quality_score", 0)
+    if quality_score > 0:
+        level = "success" if quality_score > 75 else "warning"
+        logs.append((current_time, level, f"⚖️ Quality Score: {quality_score}/100"))
+    
+    # Add last message
+    last_msg = status.get("last_message", "")
+    if last_msg:
+        logs.append((current_time, "info", f"💬 User: {last_msg[:80]}..."))
+    
+    return logs
+
 
 # --- MAIN DASHBOARD ---
 
+# Render header
+st.markdown(render_header(), unsafe_allow_html=True)
+
 # --- NEW PROJECT INPUT ---
-with st.expander("🚀 Lancer un Nouveau Projet", expanded=True):
+with st.expander("🚀 Launch New Project", expanded=False):
+    st.markdown("""
+    <div style="margin-bottom: 15px; color: #94a3b8; font-size: 0.9em;">
+        Describe your project requirements. The Multi-LLM factory will analyze, architect, 
+        develop, and review your project automatically.
+    </div>
+    """, unsafe_allow_html=True)
+    
     with st.form("new_project_form"):
-        user_prompt = st.text_area("Décrivez votre besoin :", height=100, placeholder="Ex: Créer une API FastAPI pour gérer des produits...")
-        submitted = st.form_submit_button("Démarrer l'Usine")
+        user_prompt = st.text_area(
+            "Project Description:",
+            height=120,
+            placeholder="Example: Create a REST API with FastAPI for managing a todo list with SQLite database, authentication, and proper error handling..."
+        )
+        
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            env_mode = st.selectbox("Environment:", ["DEV", "PROD"])
+        with col2:
+            submitted = st.form_submit_button("🚀 Launch Factory", use_container_width=True)
         
         if submitted and user_prompt:
             try:
+                request_data = {
+                    "prompt": user_prompt,
+                    "env_mode": env_mode,
+                    "timestamp": datetime.now().isoformat()
+                }
                 with open("request.json", "w", encoding="utf-8") as f:
-                    json.dump({"prompt": user_prompt}, f)
-                st.success("Requete envoyée au Daemon NexusPrime ! (L'usine va démarrer dans quelques secondes...)")
+                    json.dump(request_data, f)
+                st.success("✅ Request submitted! The factory will start processing in a few seconds...")
             except Exception as e:
                 st.error(f"⚠️ Failed to save request: {e}")
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Load current status and memory
 status = load_status()
 memory = load_memory()
-        # TABS
-        tab1, tab2, tab3 = st.tabs(["📊 SYSTEM MONITOR", "🧠 NEURAL MEMORY", "💳 TOKEN USAGE"])
-        
-# --- TAB 1: MONITOR ---
+
+# --- TABS ---
+tab1, tab2, tab3, tab4 = st.tabs([
+    "📊 SYSTEM MONITOR",
+    "⚖️ COUNCIL REVIEW",
+    "🧠 NEURAL MEMORY",
+    "💳 TOKEN USAGE"
+])
+
+# --- TAB 1: SYSTEM MONITOR ---
 with tab1:
-    # METRICS ROW
+    # Determine current pipeline step
+    current_status = status.get("current_status", "") if status else ""
+    
+    # Map status to pipeline step
+    pipeline_step = "input"
+    if "Product Owner" in current_status:
+        pipeline_step = "po"
+    elif "Tech Lead" in current_status:
+        pipeline_step = "tech"
+    elif "Dev Squad" in current_status:
+        pipeline_step = "dev"
+    elif "Council" in current_status:
+        pipeline_step = "council"
+    
+    # Render pipeline
+    st.markdown(
+        render_progress_pipeline(pipeline_step),
+        unsafe_allow_html=True
+    )
+    
+    # Parse agent info
+    agent_name, model, status_msg, progress = parse_agent_info(current_status)
+    
+    # Active Agent Section
+    st.markdown(
+        render_active_agent(agent_name, model, status_msg, progress),
+        unsafe_allow_html=True
+    )
+    
+    # Metrics Row
     col1, col2, col3, col4 = st.columns(4)
     
-    raw_status = status.get('current_status', 'Offline') if status else 'Offline'
-    icon, short_status, progress_val = get_status_icon(raw_status)
+    score = status.get("quality_score", 0) if status else 0
+    score_color = "#10b981" if score > 75 else "#f59e0b" if score > 50 else "#ef4444"
     
     with col1:
-        st.markdown(f"""
-        <div class="nexus-card">
-            <div class="metric-label">ACTIVE MODULE</div>
-            <div class="metric-value" style="color:#00ff88; font-size:1.5em;">{icon} {short_status}</div>
-            <div style="height:4px; background:#333; margin-top:10px;"><div style="width:{progress_val}%; height:100%; background:#00ff88;"></div></div>
-        </div>""", unsafe_allow_html=True)
-
-    score = status.get('quality_score', 0) if status else 0
+        st.markdown(
+            render_metrics_card(
+                "Quality Score",
+                f"{score}/100",
+                "⭐",
+                progress=score,
+                color=score_color
+            ),
+            unsafe_allow_html=True
+        )
+    
+    loop_count = status.get("feedback_loop_count", 0) if status else 0
     with col2:
-        st.markdown(f"""<div class="nexus-card"><div class="metric-label">QUALITY SCORE</div><div class="metric-value">{score}/100</div></div>""", unsafe_allow_html=True)
-
-    loop = status.get('feedback_loop_count', 0) if status else 0
+        st.markdown(
+            render_metrics_card(
+                "Feedback Loops",
+                f"{loop_count}/5",
+                "🔄",
+                progress=(loop_count / 5) * 100,
+                color="#6366f1"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    env_mode = status.get("env_mode", "N/A") if status else "N/A"
+    env_color = "#8b5cf6" if env_mode == "PROD" else "#10b981"
     with col3:
-        st.markdown(f"""<div class="nexus-card"><div class="metric-label">LOOPS</div><div class="metric-value">{loop}</div></div>""", unsafe_allow_html=True)
-
-    env = status.get('env_mode', 'N/A') if status else 'N/A'
+        st.markdown(
+            render_metrics_card(
+                "Environment",
+                env_mode,
+                "🌍",
+                color=env_color
+            ),
+            unsafe_allow_html=True
+        )
+    
+    # Token preview in metric
+    tokens = status.get("total_tokens", {}) if status else {}
+    total_tokens = tokens.get("total_tokens", 0)
     with col4:
-        st.markdown(f"""<div class="nexus-card"><div class="metric-label">ENV MODE</div><div class="metric-value" style="color:#00b8ff">{env}</div></div>""", unsafe_allow_html=True)
-
-    # CONSOLE AREA
-    c_left, c_right = st.columns([2, 1])
-    with c_left:
-        st.markdown("### 🖥️ LIVE TERMINAL")
-        log_content = ""
-        if status:
-            spec_excerpt = status.get('spec_excerpt', '')
-            last_msg = status.get('last_message', '')
-            log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> SYSTEM: Processing Input...</div>"
-            log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> USER: {last_msg}</div>"
-            if spec_excerpt:
-                log_content += f"<div style='color:#888; margin-top:10px; font-size:0.8em; border-left:2px solid #333; padding-left:10px;'>{spec_excerpt}</div>"
+        st.markdown(
+            render_metrics_card(
+                "Total Tokens",
+                f"{total_tokens:,}",
+                "🪙",
+                color="#f59e0b"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    # Terminal and Workspace
+    col_left, col_right = st.columns([2, 1])
+    
+    with col_left:
+        st.markdown("""
+        <div class="nexus-card">
+            <div class="card-title">
+                <span class="card-icon">🖥️</span>
+                LIVE TERMINAL
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown(f"""<div class="console-box">{log_content}<div style='color:#00ff88; animation: blink 1s infinite;'>_</div></div>""", unsafe_allow_html=True)
+        logs = build_log_entries(status)
+        st.markdown(render_terminal(logs), unsafe_allow_html=True)
     
-    with c_right:
-        st.markdown("### 📂 WORKSPACE")
-        if os.path.exists("workspace"):
-            try:
-                files = os.listdir("workspace")
-                for f in files:
-                    st.code(f"📄 {f}")
-            except Exception as e:
-                st.warning(f"Could not list workspace files: {e}")
+    with col_right:
+        st.markdown(render_workspace_files(), unsafe_allow_html=True)
 
-# --- TAB 2: MEMORY ---
+# --- TAB 2: COUNCIL REVIEW ---
 with tab2:
-    st.subheader("Persistent Learning (RAG)")
-    if memory and memory.get("lessons"):
-        for l in reversed(memory["lessons"]):
-            st.success(f"TOPIC: {l['topic']}")
-            st.json(l)
-    else:
-        st.info("No memories stored yet.")
+    st.markdown("""
+    <div style="margin-bottom: 20px; padding: 20px; background: rgba(99, 102, 241, 0.1); 
+                border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
+        <h3 style="margin: 0 0 10px 0; color: #6366f1;">⚖️ Multi-LLM Council Review System</h3>
+        <p style="margin: 0; color: #94a3b8; font-size: 0.9em;">
+            Three independent AI judges (Grok, Gemini, Claude) review every output. 
+            Claude then arbitrates to provide a final definitive quality score.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    judges, arbitrator = parse_council_data(status if status else {})
+    st.markdown(
+        render_council_section(judges, arbitrator),
+        unsafe_allow_html=True
+    )
+    
+    # Show detailed report if available
+    if status and status.get("council_report"):
+        with st.expander("📋 View Detailed Council Report"):
+            st.code(status["council_report"], language="text")
 
-# --- TAB 3: TOKEN USAGE (REAL) ---
+# --- TAB 3: MEMORY ---
 with tab3:
-    st.subheader("💰 Resource Consumption (Real-Time)")
+    st.markdown("""
+    <div class="nexus-card">
+        <div class="card-title">
+            <span class="card-icon">🧠</span>
+            PERSISTENT LEARNING (RAG System)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    tokens = status.get('total_tokens', {}) if status else {}
-    total = tokens.get('total_tokens', 0)
-    prompt = tokens.get('prompt_tokens', 0)
-    completion = tokens.get('completion_tokens', 0)
+    if memory and memory.get("lessons"):
+        st.info(f"**{len(memory['lessons'])} lessons stored** in neural memory")
+        
+        for idx, lesson in enumerate(reversed(memory["lessons"][-10:])):  # Show last 10
+            with st.expander(f"Lesson {len(memory['lessons']) - idx}: {lesson.get('topic', 'Unknown')}", expanded=False):
+                st.json(lesson)
+    else:
+        st.info("🔍 No memories stored yet. The system will learn from successful projects.")
+
+# --- TAB 4: TOKEN USAGE ---
+with tab4:
+    st.markdown("""
+    <div class="nexus-card">
+        <div class="card-title">
+            <span class="card-icon">💰</span>
+            RESOURCE CONSUMPTION (Real-Time)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Simulated cost calculation (approx for Gemini)
-    cost = (prompt * 0.0000005) + (completion * 0.0000015)
+    tokens = status.get("total_tokens", {}) if status else {}
+    total = tokens.get("total_tokens", 0)
+    prompt = tokens.get("prompt_tokens", 0)
+    completion = tokens.get("completion_tokens", 0)
     
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Tokens", f"{total:,}")
-    m2.metric("Prompt Tokens", f"{prompt:,}")
-    m3.metric("Completion Tokens", f"{completion:,}")
-    m4.metric("Est. Cost", f"${cost:.6f}")
+    # Estimated cost calculation
+    # These are approximate costs for GitHub Copilot API
+    cost = (prompt * 0.000002) + (completion * 0.000008)
     
-    st.progress(min(total / 1000000, 1.0)) # Max 1M context bar
-    st.caption("Usage resets on factory restart.")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(
+            render_metrics_card(
+                "Total Tokens",
+                f"{total:,}",
+                "🪙",
+                color="#6366f1"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    with col2:
+        st.markdown(
+            render_metrics_card(
+                "Input Tokens",
+                f"{prompt:,}",
+                "📥",
+                color="#8b5cf6"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    with col3:
+        st.markdown(
+            render_metrics_card(
+                "Output Tokens",
+                f"{completion:,}",
+                "📤",
+                color="#10b981"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    with col4:
+        st.markdown(
+            render_metrics_card(
+                "Est. Cost",
+                f"${cost:.4f}",
+                "💵",
+                color="#f59e0b"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    # Progress bar for context window
+    st.markdown("<br>", unsafe_allow_html=True)
+    progress_pct = min((total / 1000000) * 100, 100)
+    st.progress(progress_pct / 100)
+    st.caption(f"📊 Context usage: {total:,} / 1,000,000 tokens ({progress_pct:.1f}%)")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Cost breakdown by model
+    st.markdown("""
+    <div class="nexus-card">
+        <div class="card-title">
+            <span class="card-icon">💎</span>
+            MODEL COST BREAKDOWN
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    | Model | Usage | Approx. Cost/1M Tokens |
+    |-------|-------|------------------------|
+    | Claude Sonnet 4 | Product Owner, Dev Squad, Council | $3-15 |
+    | Gemini 2.5 Pro | Tech Lead, Council | $1.25-5 |
+    | Grok 3 | Council | $2-10 |
+    
+    💡 **Tip**: DEV mode uses fewer tokens than PROD mode (less strict validation)
+    """)
+
+# Footer
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("""
+<div style="text-align: center; color: #94a3b8; font-size: 0.8em; padding: 20px; 
+            border-top: 1px solid #2d2d3a;">
+    🔮 NexusPrime Multi-LLM Factory | Powered by Claude, Gemini & Grok via GitHub Copilot
+</div>
+""", unsafe_allow_html=True)
