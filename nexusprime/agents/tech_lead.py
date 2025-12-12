@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from .base import Agent
-from ..core.llm import call_llm
+from ..core.llm_router import get_llm_router
 from ..core.state import NexusFactoryState
 from ..integrations.memory import NexusMemory
 from ..integrations.github_client import GitHubClient
@@ -55,8 +55,10 @@ class TechLeadAgent(Agent):
         )
         
         try:
-            env_decision, usage = call_llm(
-                env_prompt,
+            router = get_llm_router()
+            env_decision, usage = router.call(
+                prompt=env_prompt,
+                agent_name="tech_lead",
                 system_prompt="You are a Tech Lead. Output only PROD or DEV."
             )
             env_mode = "PROD" if "PROD" in env_decision.upper() else "DEV"

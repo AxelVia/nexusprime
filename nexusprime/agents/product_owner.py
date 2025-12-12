@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from .base import Agent
-from ..core.llm import call_llm
+from ..core.llm_router import get_llm_router
 from ..core.state import NexusFactoryState
 from ..utils.tokens import update_token_usage
 from ..utils.status import save_status_snapshot
@@ -37,7 +37,11 @@ class ProductOwnerAgent(Agent):
         # Generate specification
         prompt = f"Generate a strict SPEC.md for this request: {last_msg}"
         try:
-            spec, usage = call_llm(prompt)
+            router = get_llm_router()
+            spec, usage = router.call(
+                prompt=prompt,
+                agent_name="product_owner"
+            )
             new_tokens = update_token_usage(state.get("total_tokens", {}), usage)
             
             state_update = {
