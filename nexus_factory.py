@@ -13,7 +13,7 @@ load_dotenv() # Load GOOGLE_API_KEY and GITHUB_TOKEN
 
 # Setup Gemini
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3-pro",
+    model="gemini-2.5-pro",
     temperature=0.2, # Low temp for precise engineering
     convert_system_message_to_human=True
 )
