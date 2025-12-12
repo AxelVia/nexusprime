@@ -134,7 +134,7 @@ class CouncilAgent(Agent):
         
         # Define reviewers with their agent names
         reviewers = [
-            ("GPT-4", "council_gpt4"),
+            ("GPT-5", "council_gpt"),
             ("Gemini", "council_gemini"),
             ("Claude", "council_claude")
         ]
