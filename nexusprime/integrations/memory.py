@@ -116,7 +116,7 @@ class NexusMemory:
             Unique lesson ID
         """
         lesson_id = str(uuid.uuid4())
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now().isoformat()
         
         # Compute embedding from topic + context
         embedding_text = f"{topic} {context}"

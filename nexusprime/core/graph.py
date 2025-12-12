@@ -12,31 +12,28 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-# Agent instances
-_product_owner = ProductOwnerAgent()
-_tech_lead = TechLeadAgent()
-_dev_squad = DevSquadAgent()
-_council = CouncilAgent()
-
-
 def product_owner_node(state: NexusFactoryState) -> dict:
     """Product Owner node."""
-    return _product_owner.execute(state)
+    agent = ProductOwnerAgent()
+    return agent.execute(state)
 
 
 def tech_lead_node(state: NexusFactoryState) -> dict:
     """Tech Lead node."""
-    return _tech_lead.execute(state)
+    agent = TechLeadAgent()
+    return agent.execute(state)
 
 
 def dev_squad_node(state: NexusFactoryState) -> dict:
     """Dev Squad node."""
-    return _dev_squad.execute(state)
+    agent = DevSquadAgent()
+    return agent.execute(state)
 
 
 def council_node(state: NexusFactoryState) -> dict:
     """Council node."""
-    return _council.execute(state)
+    agent = CouncilAgent()
+    return agent.execute(state)
 
 
 def route_council(state: NexusFactoryState) -> str:
