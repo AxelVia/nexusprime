@@ -17,6 +17,7 @@ build/
 nexus_memory.json
 status.json
 request.json
+request.processed.json
 workspace/
 *.log
 

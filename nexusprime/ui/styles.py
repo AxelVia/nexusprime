@@ -480,6 +480,11 @@ def get_base_styles() -> str:
         box-shadow: 0 0 15px {COLORS['glow']} !important;
     }}
     
+    .stTextArea label {{
+        color: #22d3ee !important;
+        font-weight: 500 !important;
+    }}
+    
     .stButton button {{
         background: linear-gradient(135deg, {COLORS['accent_primary']}, {COLORS['accent_secondary']}) !important;
         color: white !important;
