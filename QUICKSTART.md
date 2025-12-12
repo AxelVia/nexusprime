@@ -5,7 +5,9 @@
 ### Prerequisites
 
 - Python 3.10 or higher
-- GitHub account with **GitHub Copilot** access (required for Multi-LLM features)
+- **Anthropic API key** (for Claude Sonnet 4)
+- **Google AI API key** (for Gemini 3 Pro)
+- **GitHub token** (for GitHub Models API - Grok 3, GPT-5)
 - Git installed
 
 ### 1. Install Dependencies
@@ -19,17 +21,24 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```bash
+GITHUB_TOKEN=your_github_token_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 GOOGLE_API_KEY=your_google_api_key_here
-GITHUB_TOKEN=your_github_token_with_copilot_access
 ```
 
-**Important**: Your GitHub token must have GitHub Copilot access enabled. This is required for the Multi-LLM architecture (Claude, Gemini, Grok).
+**Required API Keys**:
 
-To verify your Copilot access:
-```bash
-curl -H "Authorization: Bearer $GITHUB_TOKEN" \
-     https://api.githubcopilot.com/models
-```
+1. **GITHUB_TOKEN**: GitHub personal access token
+   - Get it from: https://github.com/settings/tokens
+   - Required for GitHub Models API (Grok 3, GPT-5)
+
+2. **ANTHROPIC_API_KEY**: Anthropic API key
+   - Get it from: https://console.anthropic.com/
+   - Required for Claude Sonnet 4
+
+3. **GOOGLE_API_KEY**: Google AI API key
+   - Get it from: https://makersuite.google.com/app/apikey
+   - Required for Gemini 3 Pro
 
 ### 3. Run the Factory
 
@@ -45,11 +54,12 @@ streamlit run dashboard.py
 
 ## 🎯 What's New in This Version?
 
-### ✅ Multi-LLM Architecture
-- ✅ Claude Sonnet 4 for requirements and code generation
-- ✅ Gemini 2.5 Pro for architecture and technical review
-- ✅ Grok 3 for creative analysis and critical thinking
-- ✅ Council debate system with 3 independent judges + arbitration
+### ✅ Multi-API Architecture
+- ✅ Claude Sonnet 4 for requirements and code generation (via Anthropic API)
+- ✅ Gemini 3 Pro for architecture and technical review (via Google AI API)
+- ✅ Grok 3 for creative analysis and critical thinking (via GitHub Models API)
+- ✅ GPT-5 for advanced reasoning and validation (via GitHub Models API)
+- ✅ Council debate system with 4 independent judges + arbitration
 
 ### ✅ Security Enhancements
 - ✅ Required environment variable validation

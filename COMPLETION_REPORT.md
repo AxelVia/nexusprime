@@ -45,8 +45,9 @@ pip install -r requirements.txt
 
 # 2. Configure
 cat > .env << EOF
-GOOGLE_API_KEY=your_key
-GITHUB_TOKEN=your_token
+GITHUB_TOKEN=your_github_token
+ANTHROPIC_API_KEY=your_anthropic_key
+GOOGLE_API_KEY=your_google_key
 EOF
 
 # 3. Test
