@@ -2,6 +2,12 @@
 
 ## 🚀 Quick Setup (5 minutes)
 
+### Prerequisites
+
+- Python 3.10 or higher
+- GitHub account with **GitHub Copilot** access (required for Multi-LLM features)
+- Git installed
+
 ### 1. Install Dependencies
 
 ```bash
@@ -14,7 +20,15 @@ Create a `.env` file in the project root:
 
 ```bash
 GOOGLE_API_KEY=your_google_api_key_here
-GITHUB_TOKEN=your_github_token_here
+GITHUB_TOKEN=your_github_token_with_copilot_access
+```
+
+**Important**: Your GitHub token must have GitHub Copilot access enabled. This is required for the Multi-LLM architecture (Claude, Gemini, Grok).
+
+To verify your Copilot access:
+```bash
+curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+     https://api.githubcopilot.com/models
 ```
 
 ### 3. Run the Factory
@@ -30,6 +44,12 @@ streamlit run dashboard.py
 ```
 
 ## 🎯 What's New in This Version?
+
+### ✅ Multi-LLM Architecture
+- ✅ Claude Sonnet 4 for requirements and code generation
+- ✅ Gemini 2.5 Pro for architecture and technical review
+- ✅ Grok 3 for creative analysis and critical thinking
+- ✅ Council debate system with 3 independent judges + arbitration
 
 ### ✅ Security Enhancements
 - ✅ Required environment variable validation
