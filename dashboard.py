@@ -1,8 +1,12 @@
+"""NexusPrime Dashboard - Real-time monitoring interface."""
+
+from __future__ import annotations
+
 import streamlit as st
 import json
-import time
 import os
 from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
 
 # --- CONFIGURATION & STYLES ---
 st.set_page_config(page_title="NEXUS PRIME // CONTROL CENTER", layout="wide", page_icon="💠")
@@ -93,17 +97,31 @@ st.markdown("""
 
 # --- DATA HELPERS ---
 def load_status():
+    """Load status from JSON file with error handling."""
     if os.path.exists("status.json"):
         try:
-            with open("status.json", "r") as f: return json.load(f)
-        except: return None
+            with open("status.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            st.error("⚠️ status.json is corrupted. Please restart the factory.")
+            return None
+        except Exception as e:
+            st.error(f"⚠️ Failed to load status.json: {e}")
+            return None
     return None
 
 def load_memory():
+    """Load memory from JSON file with error handling."""
     if os.path.exists("nexus_memory.json"):
         try:
-            with open("nexus_memory.json", "r") as f: return json.load(f)
-        except: return None
+            with open("nexus_memory.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            st.warning("⚠️ nexus_memory.json is corrupted. Showing empty memory.")
+            return {"lessons": []}
+        except Exception as e:
+            st.warning(f"⚠️ Failed to load memory: {e}")
+            return {"lessons": []}
     return {"lessons": []}
 
 def get_status_icon(text):
@@ -113,108 +131,112 @@ def get_status_icon(text):
     if "Council" in text: return ("🛡️", "Auditing", 90)
     return ("⏳", "Standby", 0)
 
-# --- MAIN LOOP ---
+# --- AUTO-REFRESH ---
+# Refresh every 2 seconds (2000ms)
+st_autorefresh(interval=2000, limit=None, key="nexus_refresh")
 
-# --- NEW PROJECT INPUT (Outside Loop) ---
+# --- MAIN DASHBOARD ---
+
+# --- NEW PROJECT INPUT ---
 with st.expander("🚀 Lancer un Nouveau Projet", expanded=True):
     with st.form("new_project_form"):
         user_prompt = st.text_area("Décrivez votre besoin :", height=100, placeholder="Ex: Créer une API FastAPI pour gérer des produits...")
         submitted = st.form_submit_button("Démarrer l'Usine")
         
         if submitted and user_prompt:
-            with open("request.json", "w") as f:
-                json.dump({"prompt": user_prompt}, f)
-            st.success("Requete envoyée au Daemon NexusPrime ! (L'usine va démarrer dans quelques secondes...)")
+            try:
+                with open("request.json", "w", encoding="utf-8") as f:
+                    json.dump({"prompt": user_prompt}, f)
+                st.success("Requete envoyée au Daemon NexusPrime ! (L'usine va démarrer dans quelques secondes...)")
+            except Exception as e:
+                st.error(f"⚠️ Failed to save request: {e}")
 
-main_ph = st.empty()
-
-while True:
-    status = load_status()
-    memory = load_memory()
-    
-    with main_ph.container():
+# Load current status and memory
+status = load_status()
+memory = load_memory()
         # TABS
         tab1, tab2, tab3 = st.tabs(["📊 SYSTEM MONITOR", "🧠 NEURAL MEMORY", "💳 TOKEN USAGE"])
         
-        # --- TAB 1: MONITOR ---
-        with tab1:
-            # METRICS ROW
-            col1, col2, col3, col4 = st.columns(4)
-            
-            raw_status = status.get('current_status', 'Offline') if status else 'Offline'
-            icon, short_status, progress_val = get_status_icon(raw_status)
-            
-            with col1:
-                st.markdown(f"""
-                <div class="nexus-card">
-                    <div class="metric-label">ACTIVE MODULE</div>
-                    <div class="metric-value" style="color:#00ff88; font-size:1.5em;">{icon} {short_status}</div>
-                    <div style="height:4px; background:#333; margin-top:10px;"><div style="width:{progress_val}%; height:100%; background:#00ff88;"></div></div>
-                </div>""", unsafe_allow_html=True)
+# --- TAB 1: MONITOR ---
+with tab1:
+    # METRICS ROW
+    col1, col2, col3, col4 = st.columns(4)
+    
+    raw_status = status.get('current_status', 'Offline') if status else 'Offline'
+    icon, short_status, progress_val = get_status_icon(raw_status)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="nexus-card">
+            <div class="metric-label">ACTIVE MODULE</div>
+            <div class="metric-value" style="color:#00ff88; font-size:1.5em;">{icon} {short_status}</div>
+            <div style="height:4px; background:#333; margin-top:10px;"><div style="width:{progress_val}%; height:100%; background:#00ff88;"></div></div>
+        </div>""", unsafe_allow_html=True)
 
-            score = status.get('quality_score', 0) if status else 0
-            with col2:
-                st.markdown(f"""<div class="nexus-card"><div class="metric-label">QUALITY SCORE</div><div class="metric-value">{score}/100</div></div>""", unsafe_allow_html=True)
+    score = status.get('quality_score', 0) if status else 0
+    with col2:
+        st.markdown(f"""<div class="nexus-card"><div class="metric-label">QUALITY SCORE</div><div class="metric-value">{score}/100</div></div>""", unsafe_allow_html=True)
 
-            loop = status.get('feedback_loop_count', 0) if status else 0
-            with col3:
-                st.markdown(f"""<div class="nexus-card"><div class="metric-label">LOOPS</div><div class="metric-value">{loop}</div></div>""", unsafe_allow_html=True)
+    loop = status.get('feedback_loop_count', 0) if status else 0
+    with col3:
+        st.markdown(f"""<div class="nexus-card"><div class="metric-label">LOOPS</div><div class="metric-value">{loop}</div></div>""", unsafe_allow_html=True)
 
-            env = status.get('env_mode', 'N/A') if status else 'N/A'
-            with col4:
-                st.markdown(f"""<div class="nexus-card"><div class="metric-label">ENV MODE</div><div class="metric-value" style="color:#00b8ff">{env}</div></div>""", unsafe_allow_html=True)
+    env = status.get('env_mode', 'N/A') if status else 'N/A'
+    with col4:
+        st.markdown(f"""<div class="nexus-card"><div class="metric-label">ENV MODE</div><div class="metric-value" style="color:#00b8ff">{env}</div></div>""", unsafe_allow_html=True)
 
-            # CONSOLE AREA
-            c_left, c_right = st.columns([2, 1])
-            with c_left:
-                st.markdown("### 🖥️ LIVE TERMINAL")
-                log_content = ""
-                if status:
-                    spec_excerpt = status.get('spec_excerpt', '')
-                    last_msg = status.get('last_message', '')
-                    log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> SYSTEM: Processing Input...</div>"
-                    log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> USER: {last_msg}</div>"
-                    if spec_excerpt:
-                        log_content += f"<div style='color:#888; margin-top:10px; font-size:0.8em; border-left:2px solid #333; padding-left:10px;'>{spec_excerpt}</div>"
-                
-                st.markdown(f"""<div class="console-box">{log_content}<div style='color:#00ff88; animation: blink 1s infinite;'>_</div></div>""", unsafe_allow_html=True)
-            
-            with c_right:
-                 st.markdown("### 📂 WORKSPACE")
-                 if os.path.exists("workspace"):
-                    files = os.listdir("workspace")
-                    for f in files:
-                        st.code(f"📄 {f}")
+    # CONSOLE AREA
+    c_left, c_right = st.columns([2, 1])
+    with c_left:
+        st.markdown("### 🖥️ LIVE TERMINAL")
+        log_content = ""
+        if status:
+            spec_excerpt = status.get('spec_excerpt', '')
+            last_msg = status.get('last_message', '')
+            log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> SYSTEM: Processing Input...</div>"
+            log_content += f"<div class='log-entry'><span style='color:#555'>[{datetime.now().strftime('%H:%M:%S')}]</span> USER: {last_msg}</div>"
+            if spec_excerpt:
+                log_content += f"<div style='color:#888; margin-top:10px; font-size:0.8em; border-left:2px solid #333; padding-left:10px;'>{spec_excerpt}</div>"
+        
+        st.markdown(f"""<div class="console-box">{log_content}<div style='color:#00ff88; animation: blink 1s infinite;'>_</div></div>""", unsafe_allow_html=True)
+    
+    with c_right:
+        st.markdown("### 📂 WORKSPACE")
+        if os.path.exists("workspace"):
+            try:
+                files = os.listdir("workspace")
+                for f in files:
+                    st.code(f"📄 {f}")
+            except Exception as e:
+                st.warning(f"Could not list workspace files: {e}")
 
-        # --- TAB 2: MEMORY ---
-        with tab2:
-            st.subheader("Persistent Learning (RAG)")
-            if memory and memory.get("lessons"):
-                for l in reversed(memory["lessons"]):
-                    st.success(f"TOPIC: {l['topic']}")
-                    st.json(l)
-            else:
-                st.info("No memories stored yet.")
+# --- TAB 2: MEMORY ---
+with tab2:
+    st.subheader("Persistent Learning (RAG)")
+    if memory and memory.get("lessons"):
+        for l in reversed(memory["lessons"]):
+            st.success(f"TOPIC: {l['topic']}")
+            st.json(l)
+    else:
+        st.info("No memories stored yet.")
 
-        # --- TAB 3: TOKEN USAGE (REAL) ---
-        with tab3:
-            st.subheader("💰 Resource Consumption (Real-Time)")
-            
-            tokens = status.get('total_tokens', {}) if status else {}
-            total = tokens.get('total_tokens', 0)
-            prompt = tokens.get('prompt_tokens', 0)
-            completion = tokens.get('completion_tokens', 0)
-            
-            # Simulated cost calculation (approx for Gemini)
-            cost = (prompt * 0.0000005) + (completion * 0.0000015)
-            
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total Tokens", f"{total:,}")
-            m2.metric("Prompt Tokens", f"{prompt:,}")
-            m3.metric("Completion Tokens", f"{completion:,}")
-            m4.metric("Est. Cost", f"${cost:.6f}")
-            
-            st.progress(min(total / 1000000, 1.0)) # Max 1M context bar
-            st.caption("Usage resets on factory restart.")
-
-    time.sleep(1)
+# --- TAB 3: TOKEN USAGE (REAL) ---
+with tab3:
+    st.subheader("💰 Resource Consumption (Real-Time)")
+    
+    tokens = status.get('total_tokens', {}) if status else {}
+    total = tokens.get('total_tokens', 0)
+    prompt = tokens.get('prompt_tokens', 0)
+    completion = tokens.get('completion_tokens', 0)
+    
+    # Simulated cost calculation (approx for Gemini)
+    cost = (prompt * 0.0000005) + (completion * 0.0000015)
+    
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Tokens", f"{total:,}")
+    m2.metric("Prompt Tokens", f"{prompt:,}")
+    m3.metric("Completion Tokens", f"{completion:,}")
+    m4.metric("Est. Cost", f"${cost:.6f}")
+    
+    st.progress(min(total / 1000000, 1.0)) # Max 1M context bar
+    st.caption("Usage resets on factory restart.")
