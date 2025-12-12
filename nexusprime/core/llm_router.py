@@ -18,7 +18,7 @@ from ..utils.security import get_required_env
 logger = get_logger(__name__)
 
 
-class LLMProvider(Enum):
+class LLMProvider(str, Enum):
     """Modèles disponibles via GitHub Models API."""
     CLAUDE_SONNET = "anthropic/claude-sonnet-4"
     GEMINI_PRO = "google/gemini-2.5-pro" 

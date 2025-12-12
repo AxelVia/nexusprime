@@ -23,6 +23,13 @@ class TestLLMProvider:
         assert LLMProvider.GEMINI_PRO.value == "google/gemini-2.5-pro"
         assert LLMProvider.GPT4O.value == "openai/gpt-4o"
         assert LLMProvider.GPT4O_MINI.value == "openai/gpt-4o-mini"
+    
+    def test_provider_is_string_enum(self):
+        """Test that LLMProvider is a string enum for compatibility."""
+        assert isinstance(LLMProvider.CLAUDE_SONNET, str)
+        assert isinstance(LLMProvider.GEMINI_PRO, str)
+        # Test string comparison works
+        assert LLMProvider.CLAUDE_SONNET == "anthropic/claude-sonnet-4"
 
 
 class TestLLMConfig:
