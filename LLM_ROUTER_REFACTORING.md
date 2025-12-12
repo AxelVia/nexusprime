@@ -17,8 +17,8 @@ The LLM Router has been refactored to support multiple AI APIs instead of relyin
 | `product_owner` | Claude Sonnet 4 | Anthropic API | temp: 0.3 |
 | `dev_squad` | Claude Sonnet 4 | Anthropic API | temp: 0.1 |
 | `council_claude` | Claude Sonnet 4 | Anthropic API | temp: 0.4 |
-| `tech_lead` | Gemini 3 Pro | Google AI API | temp: 0.2 |
-| `council_gemini` | Gemini 3 Pro | Google AI API | temp: 0.4 |
+| `tech_lead` | Gemini 2.0 Flash | Google AI API | temp: 0.2 |
+| `council_gemini` | Gemini 2.0 Flash | Google AI API | temp: 0.4 |
 | `council_grok` | Grok 3 | GitHub Models API | temp: 0.4 |
 | `council_gpt` | GPT-5 | GitHub Models API | temp: 0.4 |
 
@@ -31,11 +31,11 @@ The LLM Router has been refactored to support multiple AI APIs instead of relyin
 - **Required Header**: `anthropic-version: 2023-06-01`
 - **Model**: `claude-sonnet-4-20250514`
 
-#### 2. Google AI API (Gemini 3 Pro)
+#### 2. Google AI API (Gemini)
 
 - **SDK**: `google-generativeai`
 - **Authentication**: `GOOGLE_API_KEY`
-- **Model**: `gemini-3-pro` (with fallback to `gemini-2.5-pro`)
+- **Model**: `gemini-2.0-flash-exp` (latest available Gemini model)
 
 #### 3. GitHub Models API (Grok 3, GPT-5)
 
@@ -86,7 +86,7 @@ The `call()` method now routes to the appropriate API based on the model:
 ```python
 if model == "claude-sonnet-4-20250514":
     return self._call_anthropic(...)
-elif model == "gemini-3-pro":
+elif model == "gemini-2.0-flash-exp":
     return self._call_google(...)
 elif model in ["azureml-xai/grok-3", "azure-openai/gpt-5"]:
     return self._call_github_models(...)

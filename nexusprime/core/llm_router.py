@@ -23,8 +23,8 @@ class LLMProvider(str, Enum):
     # Anthropic API
     CLAUDE_SONNET_4 = "claude-sonnet-4-20250514"
     
-    # Google AI API
-    GEMINI_3_PRO = "gemini-3-pro"
+    # Google AI API (using latest available Gemini model)
+    GEMINI_3_PRO = "gemini-2.0-flash-exp"
     
     # GitHub Models API
     GROK_3 = "azureml-xai/grok-3"
@@ -204,18 +204,8 @@ class GitHubModelsRouter:
         try:
             genai = self._init_google_genai()
             
-            # Essayer d'abord gemini-3-pro, puis fallback sur gemini-2.5-pro
-            model_name = model
-            if model == "gemini-3-pro":
-                # Gemini 3 Pro n'existe peut-être pas encore, essayer 2.5-pro
-                try:
-                    model_instance = genai.GenerativeModel(model_name)
-                except Exception:
-                    logger.warning(f"Modèle {model_name} non disponible, utilisation de gemini-2.5-pro")
-                    model_name = "gemini-2.5-pro"
-                    model_instance = genai.GenerativeModel(model_name)
-            else:
-                model_instance = genai.GenerativeModel(model_name)
+            # Use the model directly (gemini-2.0-flash-exp is the latest available)
+            model_instance = genai.GenerativeModel(model)
             
             # Combiner system_prompt et prompt
             full_prompt = f"{system_prompt}\n\n{prompt}"

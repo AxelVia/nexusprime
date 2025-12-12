@@ -20,7 +20,7 @@ class TestLLMProvider:
     def test_provider_values(self):
         """Test that all provider values are correct."""
         assert LLMProvider.CLAUDE_SONNET_4.value == "claude-sonnet-4-20250514"
-        assert LLMProvider.GEMINI_3_PRO.value == "gemini-3-pro"
+        assert LLMProvider.GEMINI_3_PRO.value == "gemini-2.0-flash-exp"
         assert LLMProvider.GROK_3.value == "azureml-xai/grok-3"
         assert LLMProvider.GPT_5.value == "azure-openai/gpt-5"
     
@@ -231,7 +231,7 @@ class TestGitHubModelsRouter:
         models = router.list_available_models()
         
         assert "claude-sonnet-4-20250514" in models
-        assert "gemini-3-pro" in models
+        assert "gemini-2.0-flash-exp" in models
         assert "azureml-xai/grok-3" in models
         assert "azure-openai/gpt-5" in models
     
@@ -241,7 +241,7 @@ class TestGitHubModelsRouter:
         router = GitHubModelsRouter()
         
         assert router.get_model_for_agent("product_owner") == "claude-sonnet-4-20250514"
-        assert router.get_model_for_agent("tech_lead") == "gemini-3-pro"
+        assert router.get_model_for_agent("tech_lead") == "gemini-2.0-flash-exp"
         assert router.get_model_for_agent("council_gpt") == "azure-openai/gpt-5"
         assert router.get_model_for_agent("council_grok") == "azureml-xai/grok-3"
         assert router.get_model_for_agent("unknown") == "claude-sonnet-4-20250514"
