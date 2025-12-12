@@ -61,10 +61,12 @@ class CouncilAgent(Agent):
         
         env = state.get("env_mode", "DEV")
         spec = state.get("spec_document", "")
+        current_code = state.get("previous_code", "")  # Code from Dev Squad
+        previous_reviews = state.get("previous_reviews", [])
         
         # Phase 1: Get independent reviews from each model
         self.log_execution("Phase 1: Gathering independent reviews")
-        opinions = self._gather_independent_reviews(spec)
+        opinions = self._gather_independent_reviews(spec, current_code, previous_reviews)
         
         # Phase 2: Final arbitration by Claude
         self.log_execution("Phase 2: Final arbitration")
@@ -73,7 +75,7 @@ class CouncilAgent(Agent):
         )
         
         # Generate detailed report
-        report = self._generate_report(opinions, final_score, arbitration_reasoning)
+        report = self._generate_report(opinions, final_score, arbitration_reasoning, previous_reviews)
         self.logger.info(f"\n{report}")
         
         new_tokens = update_token_usage(state.get("total_tokens", {}), usage_total)
@@ -107,24 +109,45 @@ class CouncilAgent(Agent):
                 f"Quality threshold not met ({final_score}). Requesting revision."
             )
         
+        # Format feedback for Dev Squad
+        review_comments = self._format_concerns_for_dev_squad(opinions)
+        
         state_update = {
             "current_status": "Agent: The Council (Multi-LLM Review Complete)",
             "quality_score": final_score,
             "council_report": report,
             "feedback_loop_count": state.get("feedback_loop_count", 0) + 1,
-            "total_tokens": new_tokens
+            "total_tokens": new_tokens,
+            "review_comments": review_comments,  # For Dev Squad to use
+            "previous_reviews": [  # Store opinions for next review
+                {
+                    "reviewer": op.reviewer,
+                    "model": op.model,
+                    "score": op.score,
+                    "reasoning": op.reasoning,
+                    "concerns": op.concerns
+                }
+                for op in opinions
+            ]
         }
         
         save_status_snapshot({**state, **state_update})
         
         return state_update
     
-    def _gather_independent_reviews(self, spec: str) -> List[ReviewerOpinion]:
+    def _gather_independent_reviews(
+        self, 
+        spec: str, 
+        current_code: str = "", 
+        previous_reviews: List[Dict] = None
+    ) -> List[ReviewerOpinion]:
         """
         Gather independent reviews from Grok, Gemini, and Claude.
         
         Args:
             spec: The specification to review
+            current_code: The generated code to review
+            previous_reviews: Previous review history for comparison
         
         Returns:
             List of ReviewerOpinion objects
@@ -139,26 +162,50 @@ class CouncilAgent(Agent):
             ("Claude", "council_claude")
         ]
         
-        review_prompt_template = """You are a strict code auditor reviewing a specification.
+        # Build review prompt with code and history
+        history_context = ""
+        if previous_reviews:
+            history_context = "\n\nPREVIOUS REVIEW SCORES:"
+            for prev in previous_reviews:
+                history_context += f"\n  {prev.get('reviewer', 'Unknown')}: {prev.get('score', 'N/A')}/100"
+            history_context += "\n\nNote: Compare this version with the previous one. Look for improvements and regressions."
+        
+        code_context = ""
+        if current_code:
+            code_context = f"\n\nGENERATED CODE (excerpt):\n{current_code[:800]}"
+        
+        review_prompt_template = """You are a strict code auditor reviewing a specification{code_suffix}.
 
 SPECIFICATION:
 {spec}
+{code_context}
+{history_context}
 
 EVALUATION CRITERIA:
 1. Clarity - Is the specification clear and unambiguous?
 2. Security - Does it address security concerns?
 3. Robustness - Is it designed for reliability and edge cases?
 4. Completeness - Are all necessary details included?
+{comparison_criteria}
 
 Provide your review in this exact format:
 SCORE: [integer 0-100]
 REASONING: [1-2 sentences explaining your score]
 CONCERNS: [comma-separated list of specific concerns, or "None"]"""
         
+        code_suffix = " and implementation" if current_code else ""
+        comparison_criteria = "\n5. Progress - If this is a revision, are issues from previous reviews addressed?" if previous_reviews else ""
+        
         for reviewer_name, agent_name in reviewers:
             try:
                 response, _ = router.call(
-                    prompt=review_prompt_template.format(spec=spec[:1500]),
+                    prompt=review_prompt_template.format(
+                        spec=spec[:1500],
+                        code_context=code_context,
+                        history_context=history_context,
+                        code_suffix=code_suffix,
+                        comparison_criteria=comparison_criteria
+                    ),
                     agent_name=agent_name,
                     system_prompt="You are a strict code auditor. Be thorough and critical."
                 )
@@ -332,7 +379,8 @@ REASONING: [2-3 sentences explaining your final decision]"""
         self,
         opinions: List[ReviewerOpinion],
         final_score: int,
-        arbitration: str
+        arbitration: str,
+        previous_reviews: List[Dict] = None
     ) -> str:
         """
         Generate a detailed report with opinion table.
@@ -341,6 +389,7 @@ REASONING: [2-3 sentences explaining your final decision]"""
             opinions: List of reviewer opinions
             final_score: Final arbitrated score
             arbitration: Arbitration reasoning
+            previous_reviews: Previous review history for comparison
         
         Returns:
             Formatted report string
@@ -383,6 +432,29 @@ REASONING: [2-3 sentences explaining your final decision]"""
                 f"  Concerns: {', '.join(op.concerns) if op.concerns else 'None'}",
             ])
         
+        # Add improvements section if there are previous reviews
+        if previous_reviews:
+            report_lines.extend([
+                "",
+                "-"*70,
+                "AMÉLIORATIONS / CHANGEMENTS:",
+                "-"*70
+            ])
+            
+            # Calculate score changes
+            for op in opinions:
+                prev_review = next(
+                    (p for p in previous_reviews if p.get('reviewer') == op.reviewer),
+                    None
+                )
+                if prev_review:
+                    prev_score = prev_review.get('score', 0)
+                    change = op.score - prev_score
+                    change_icon = "📈" if change > 0 else "📉" if change < 0 else "➡️"
+                    report_lines.append(
+                        f"{op.reviewer}: {prev_score} → {op.score} ({change:+d}) {change_icon}"
+                    )
+        
         report_lines.extend([
             "",
             "-"*70,
@@ -395,6 +467,30 @@ REASONING: [2-3 sentences explaining your final decision]"""
         ])
         
         return '\n'.join(report_lines)
+    
+    def _format_concerns_for_dev_squad(self, opinions: List[ReviewerOpinion]) -> str:
+        """
+        Format reviewer concerns into actionable feedback for Dev Squad.
+        
+        Args:
+            opinions: List of reviewer opinions
+        
+        Returns:
+            Formatted string with all concerns
+        """
+        feedback_lines = ["CONCERNS À CORRIGER:"]
+        
+        for op in opinions:
+            if op.concerns:
+                feedback_lines.append(f"\n{op.reviewer} ({op.model}) - Score: {op.score}/100:")
+                for concern in op.concerns:
+                    feedback_lines.append(f"  • {concern}")
+                feedback_lines.append(f"  Raisonnement: {op.reasoning}")
+        
+        if len(feedback_lines) == 1:
+            return "Aucun problème majeur identifié. Continuez avec le même niveau de qualité."
+        
+        return '\n'.join(feedback_lines)
     
     def _push_to_github(self, env: str) -> None:
         """

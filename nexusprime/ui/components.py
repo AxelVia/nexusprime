@@ -59,6 +59,8 @@ def render_metrics_card(
     """
     progress_bar = ""
     if progress is not None:
+        # Cap progress at 100%
+        progress = min(100, max(0, progress))
         progress_bar = f"""
         <div class="metric-progress">
             <div class="metric-progress-bar" style="width: {progress}%; background: {color};"></div>
@@ -180,7 +182,8 @@ def render_active_agent(
 
 def render_council_section(
     judges: Optional[List[Dict[str, any]]] = None,
-    arbitrator: Optional[Dict[str, any]] = None
+    arbitrator: Optional[Dict[str, any]] = None,
+    previous_score: Optional[int] = None
 ) -> str:
     """
     Render the council review section with 3 judges + arbitrator.
@@ -188,6 +191,7 @@ def render_council_section(
     Args:
         judges: List of judge dicts with keys: name, model, score, verdict, concerns
         arbitrator: Arbitrator dict with keys: score, reasoning, verdict
+        previous_score: Previous review score for comparison
     
     Returns:
         HTML string for council section
@@ -260,6 +264,24 @@ def render_council_section(
         elif arb_verdict == "REJECT":
             verdict_class = "verdict-reject"
         
+        # Add progression indicator if available
+        progression_html = ""
+        if previous_score is not None and isinstance(arb_score, (int, float)):
+            score_change = arb_score - previous_score
+            change_icon = "📈" if score_change > 0 else "📉" if score_change < 0 else "➡️"
+            change_color = "#10b981" if score_change > 0 else "#ef4444" if score_change < 0 else "#94a3b8"
+            progression_html = f"""
+            <div style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); 
+                        border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 5px;">
+                    📈 Progression vs Previous Review:
+                </div>
+                <div style="font-size: 1.2em; font-weight: 600; color: {change_color};">
+                    {change_icon} {score_change:+d} points ({previous_score} → {arb_score})
+                </div>
+            </div>
+            """
+        
         council_html.append(f"""
         <div class="arbitrator-card fade-in" style="margin-top: 20px;">
             <div style="font-size: 1.2em; font-weight: 600; margin-bottom: 15px;">
@@ -274,6 +296,7 @@ def render_council_section(
             <div style="margin-top: 20px; font-size: 0.9em; color: #94a3b8; line-height: 1.6;">
                 {arb_reasoning}
             </div>
+            {progression_html}
         </div>
         """)
     else:
@@ -287,6 +310,36 @@ def render_council_section(
             </div>
         </div>
         """)
+    
+    # Add concerns summary if available
+    if judges:
+        all_concerns = []
+        for judge in judges:
+            concerns = judge.get("concerns", [])
+            if concerns:
+                for concern in concerns:
+                    if concern and concern not in all_concerns:
+                        all_concerns.append((judge["name"], concern))
+        
+        if all_concerns:
+            council_html.append("""
+            <div style="margin-top: 20px; padding: 20px; background: rgba(239, 68, 68, 0.1); 
+                        border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 15px; color: #ef4444;">
+                    📝 Concerns Identifiées:
+                </div>
+            """)
+            
+            for judge_name, concern in all_concerns:
+                council_html.append(f"""
+                <div style="margin: 8px 0; padding: 8px 12px; background: rgba(0, 0, 0, 0.2); 
+                            border-radius: 6px; border-left: 3px solid #ef4444;">
+                    <span style="color: #94a3b8; font-size: 0.85em;">{judge_name}:</span>
+                    <span style="color: #f8fafc; margin-left: 8px;">{concern}</span>
+                </div>
+                """)
+            
+            council_html.append('</div>')
     
     council_html.append('</div>')
     
