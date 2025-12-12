@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .base import Agent
 from ..core.llm_router import get_llm_router
@@ -203,7 +203,7 @@ CONCERNS: [comma-separated list of specific concerns, or "None"]"""
         self,
         spec: str,
         opinions: List[ReviewerOpinion]
-    ) -> tuple[int, str, Dict[str, int]]:
+    ) -> Tuple[int, str, Dict[str, int]]:
         """
         Use Claude to arbitrate between the different reviews.
         

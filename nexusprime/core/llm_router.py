@@ -52,6 +52,8 @@ class CopilotLLMRouter:
         if not self.github_token:
             logger.warning("GITHUB_TOKEN not found. LLM router may not work.")
         
+        # GitHub Copilot Chat Completions API endpoint
+        # See: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-code-review
         self.api_url = "https://api.githubcopilot.com/chat/completions"
         logger.info("CopilotLLMRouter initialized")
     
