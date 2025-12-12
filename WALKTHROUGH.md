@@ -8,7 +8,7 @@ This document guides you through the lifecycle of a request within the NexusPrim
 
 ## Phase 2: Refinement (Product Owner)
 1.  **Analysis**: The Product Owner agent reads your vague request.
-2.  **Spec Generation**: It uses Gemini to expand this into a technical `SPEC.md`, converting "Todo App" into "Flask Application with endpoints /add, /delete, using SQLite...".
+2.  **Spec Generation**: It uses **Claude Sonnet 4 via Anthropic API** to expand this into a technical `SPEC.md`, converting "Todo App" into "Flask Application with endpoints /add, /delete, using SQLite...".
 3.  **Output**: `state['spec_document']` is updated.
 
 ## Phase 3: Architecture (Tech Lead)
@@ -22,10 +22,11 @@ This document guides you through the lifecycle of a request within the NexusPrim
 3.  **Token Tracking**: Costs are calculated and logged.
 
 ## Phase 5: Governance (The Council - Multi-LLM Review)
-1.  **Phase 1 - Independent Reviews**: The code is sent to three independent AI judges:
-    *   **Grok 3** (xAI): Provides creative and critical analysis
-    *   **Gemini 2.5 Pro** (Google): Focuses on technical accuracy and security
-    *   **Claude Sonnet 4** (Anthropic): Evaluates quality and best practices
+1.  **Phase 1 - Independent Reviews**: The code is sent to four independent AI judges:
+    *   **Claude Sonnet 4** (Anthropic API): Evaluates quality and best practices
+    *   **Gemini 3 Pro** (Google AI API): Focuses on technical accuracy and security
+    *   **Grok 3** (GitHub Models API): Provides creative and critical analysis
+    *   **GPT-5** (GitHub Models API): Advanced reasoning and validation
     
     Each judge independently assigns:
     - A score (0-100) based on Clarity, Security, Robustness, and Completeness
@@ -33,7 +34,7 @@ This document guides you through the lifecycle of a request within the NexusPrim
     - List of specific concerns (if any)
 
 2.  **Phase 2 - Arbitration**: Claude Sonnet 4 acts as the lead arbitrator:
-    - Reviews all three independent opinions
+    - Reviews all four independent opinions
     - Considers areas of agreement and disagreement
     - Weighs the severity of concerns raised
     - Synthesizes opinions into a final definitive score (0-100)
@@ -51,38 +52,45 @@ COUNCIL MULTI-LLM REVIEW REPORT
 
 INDIVIDUAL REVIEWS:
 ----------------------------------------------------------------------
-Reviewer        Model                Score    Concerns
+Reviewer        Model                API              Score    Concerns
 ----------------------------------------------------------------------
-Grok            grok-3                 82/100      1
-Gemini          gemini-2.5-pro         85/100      0
-Claude          claude-sonnet-4        88/100      1
+Claude          claude-sonnet-4      Anthropic         88/100      1
+Gemini          gemini-3-pro         Google AI         85/100      0
+Grok            grok-3               GitHub Models     82/100      1
+GPT             gpt-5                GitHub Models     87/100      0
 ----------------------------------------------------------------------
 
 DETAILED OPINIONS:
 ----------------------------------------------------------------------
 
-Grok (grok-3):
-  Score: 82/100
-  Reasoning: Specification is mostly clear with good structure. Minor 
-             ambiguity in error handling scenarios.
-  Concerns: Error handling edge cases not fully specified
-
-Gemini (gemini-2.5-pro):
-  Score: 85/100
-  Reasoning: Strong technical foundation with proper security 
-             considerations. Well-structured approach.
-  Concerns: None
-
-Claude (claude-sonnet-4):
+Claude (claude-sonnet-4 - Anthropic API):
   Score: 88/100
   Reasoning: High-quality specification with clear requirements. 
              Excellent attention to robustness.
   Concerns: Could benefit from more detailed logging strategy
 
+Gemini (gemini-3-pro - Google AI API):
+  Score: 85/100
+  Reasoning: Strong technical foundation with proper security 
+             considerations. Well-structured approach.
+  Concerns: None
+
+Grok (grok-3 - GitHub Models API):
+  Score: 82/100
+  Reasoning: Specification is mostly clear with good structure. Minor 
+             ambiguity in error handling scenarios.
+  Concerns: Error handling edge cases not fully specified
+
+GPT-5 (gpt-5 - GitHub Models API):
+  Score: 87/100
+  Reasoning: Comprehensive specification with advanced considerations.
+             Good balance of detail and clarity.
+  Concerns: None
+
 ----------------------------------------------------------------------
 FINAL ARBITRATION (Claude):
 ----------------------------------------------------------------------
-Final Score: 85/100
+Final Score: 86/100
 Reasoning: Strong consensus among reviewers with minor concerns that 
            don't significantly impact overall quality. Specification 
            meets high standards for clarity and completeness.

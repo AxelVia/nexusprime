@@ -4,62 +4,76 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
-NexusPrime is a state-of-the-art **AI Software Factory** designed to autonomously generate, refine, code, and validate software projects. Built on **LangGraph** and powered by a **Multi-LLM Architecture** (Claude, Gemini, Grok), it simulates a full agile team (Product Owner, Tech Lead, Dev Squad, Review Council) to deliver production-ready code.
+NexusPrime is a state-of-the-art **AI Software Factory** designed to autonomously generate, refine, code, and validate software projects. Built on **LangGraph** and powered by a **Multi-API Architecture** (Anthropic, Google AI, GitHub Models), it simulates a full agile team (Product Owner, Tech Lead, Dev Squad, Review Council) to deliver production-ready code.
 
 ## 🧠 Core Architecture
 
 The system is composed of specialized AI Agents working in a directed graph:
 
-1.  **🕵️ Product Owner** (Powered by **Claude Sonnet 4**): Analyzes user prompts, refines requirements, and generates a strict `SPEC.md`.
-2.  **🌐 Tech Lead** (Powered by **Gemini 2.5 Pro**): Sets up the environment (DEV/PROD), manages memory (RAG), and initializes the workspace.
-3.  **⚡ Dev Squad** (Powered by **Claude Sonnet 4**): Writes the actual code based on the spec, adhering to strict coding standards.
-4.  **⚖️ The Council** (Multi-LLM Debate System): Performs a rigorous code audit with three independent judges:
-    - **Grok 3** - Creative & Critical Analysis
-    - **Gemini 2.5 Pro** - Technical & Security Review
-    - **Claude Sonnet 4** - Quality & Best Practices Assessment
+1.  **🕵️ Product Owner** (Powered by **Claude Sonnet 4** via **Anthropic API**): Analyzes user prompts, refines requirements, and generates a strict `SPEC.md`.
+2.  **🌐 Tech Lead** (Powered by **Gemini 3 Pro** via **Google AI API**): Sets up the environment (DEV/PROD), manages memory (RAG), and initializes the workspace.
+3.  **⚡ Dev Squad** (Powered by **Claude Sonnet 4** via **Anthropic API**): Writes the actual code based on the spec, adhering to strict coding standards.
+4.  **⚖️ The Council** (Multi-LLM Debate System): Performs a rigorous code audit with four independent judges:
+    - **Grok 3** (via **GitHub Models API**) - Creative & Critical Analysis
+    - **Gemini 3 Pro** (via **Google AI API**) - Technical & Security Review
+    - **Claude Sonnet 4** (via **Anthropic API**) - Quality & Best Practices Assessment
+    - **GPT-5** (via **GitHub Models API**) - Advanced reasoning & validation
     - **Final Arbitration** by Claude synthesizes all opinions into a definitive Quality Score (0-100)
 5.  **📂 Git Integrator**: Once validated, the code is automatically pushed to this repository.
 
-## 🎯 Multi-LLM Architecture
+## 🎯 Multi-API Architecture
 
-NexusPrime leverages the strengths of multiple AI models through the **GitHub Copilot API**:
+NexusPrime leverages the strengths of multiple AI models through **three separate APIs**:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    LLM ROUTER                               │
-│  (GitHub Copilot Chat Completions API)                     │
-└─────────────────────────────────────────────────────────────┘
-                           │
-      ┌────────────────────┼────────────────────┐
-      │                    │                    │
-      ▼                    ▼                    ▼
-┌──────────┐         ┌──────────┐        ┌──────────┐
-│ Claude   │         │ Gemini   │        │  Grok    │
-│ Sonnet 4 │         │ 2.5 Pro  │        │    3     │
-└──────────┘         └──────────┘        └──────────┘
-     │                    │                    │
-     ▼                    ▼                    ▼
-Product Owner       Tech Lead           Council Judge
-Dev Squad           Council Judge      Council Judge
-Arbitrator
+┌─────────────────────────────────────────────────────────────────┐
+│                         NexusPrime Factory                      │
+│                                                                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │   Product    │    │  Tech Lead   │    │  Dev Squad   │      │
+│  │    Owner     │───▶│              │───▶│              │      │
+│  │ (Claude)     │    │  (Gemini)    │    │  (Claude)    │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│         │                   │                   │               │
+│         ▼                   ▼                   ▼               │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ Anthropic    │    │  Google AI   │    │ Anthropic    │      │
+│  │    API       │    │    API       │    │    API       │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│                                                                 │
+│                      ┌──────────────────────┐                   │
+│                      │     The Council      │                   │
+│                      │    (4 Judges)        │                   │
+│                      │                      │                   │
+│                      │  ┌────────────────┐  │                   │
+│                      │  │ Claude │ Gemini│  │                   │
+│                      │  │ (Anthr)│(Google)│  │                   │
+│                      │  └────────────────┘  │                   │
+│                      │  ┌────────────────┐  │                   │
+│                      │  │ Grok 3 │ GPT-5 │  │                   │
+│                      │  │(GitHub)│(GitHub)│  │                   │
+│                      │  └────────────────┘  │                   │
+│                      └──────────────────────┘                   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Agent → Model Mapping
 
-| Agent | Model | Temperature | Purpose |
-|-------|-------|-------------|---------|
-| Product Owner | Claude Sonnet 4 | 0.3 | Requirement analysis & specification |
-| Tech Lead | Gemini 2.5 Pro | 0.2 | Architecture & environment setup |
-| Dev Squad | Claude Sonnet 4 | 0.1 | Precise code generation |
-| Council (Grok) | Grok 3 | 0.4 | Creative & critical review |
-| Council (Gemini) | Gemini 2.5 Pro | 0.4 | Technical & security audit |
-| Council (Claude) | Claude Sonnet 4 | 0.3 | Quality assessment & arbitration |
+| Agent | Model | API | Temperature | Purpose |
+|-------|-------|-----|-------------|---------|
+| Product Owner | Claude Sonnet 4 | Anthropic | 0.3 | Requirement analysis & specification |
+| Tech Lead | Gemini 3 Pro | Google AI | 0.2 | Architecture & environment setup |
+| Dev Squad | Claude Sonnet 4 | Anthropic | 0.1 | Precise code generation |
+| Council Judge 1 | Claude Sonnet 4 | Anthropic | 0.4 | Quality & best practices assessment |
+| Council Judge 2 | Gemini 3 Pro | Google AI | 0.4 | Technical & security audit |
+| Council Judge 3 | Grok 3 | GitHub Models | 0.4 | Creative & critical review |
+| Council Judge 4 | GPT-5 | GitHub Models | 0.4 | Advanced reasoning & validation |
 
 ### The Council: Multi-LLM Debate System
 
 The Council uses a unique **debate and arbitration** process:
 
-1. **Phase 1: Independent Reviews** - Each of the 3 judges (Grok, Gemini, Claude) independently evaluates the specification based on:
+1. **Phase 1: Independent Reviews** - Each of the 4 judges (Claude, Gemini, Grok, GPT-5) independently evaluates the specification based on:
    - Clarity: Is the spec clear and unambiguous?
    - Security: Does it address security concerns?
    - Robustness: Is it designed for reliability?
@@ -77,14 +91,14 @@ The Council uses a unique **debate and arbitration** process:
 
 ## 🚀 Features
 
-*   **Multi-LLM Intelligence**: Harnesses the unique strengths of Claude, Gemini, and Grok for optimal results
-*   **Council Debate System**: Three independent AI judges review every output with final arbitration
+*   **Multi-API Intelligence**: Harnesses three separate APIs (Anthropic, Google AI, GitHub Models) for optimal results
+*   **Council Debate System**: Four independent AI judges review every output with final arbitration
 *   **Real-Time Dashboard**: Monitor the factory's internal state, active agents, and token usage via a futuristic Streamlit interface
 *   **Persistent Memory**: The system "learns" from successful projects using a JSON-based RAG system (`nexus_memory.json`)
 *   **Dual Environment**: Automatically detects if a request needs a "Prototype" (DEV) or "Production" (PROD) approach
 *   **Self-Healing**: "The Council" node loops back to development until quality criteria are met (max 5 iterations)
 *   **Automated Git Sync**: Projects are pushed to GitHub upon approval
-*   **GitHub Copilot Powered**: Leverages GitHub Copilot API for seamless multi-model access
+*   **Best-in-Class Models**: Leverages Claude Sonnet 4, Gemini 3 Pro, Grok 3, and GPT-5
 
 ## 🛠️ Installation
 
@@ -100,13 +114,17 @@ The Council uses a unique **debate and arbitration** process:
     ```
 
 3.  **Configure Environment**:
-    Create a `.env` file with your keys:
+    Create a `.env` file with your API keys:
     ```ini
-    GOOGLE_API_KEY=your_gemini_key_here
-    GITHUB_TOKEN=your_github_token_with_copilot_access
+    GITHUB_TOKEN=your_github_token_here
+    ANTHROPIC_API_KEY=your_anthropic_key_here
+    GOOGLE_API_KEY=your_google_key_here
     ```
     
-    **Note**: Your `GITHUB_TOKEN` must have GitHub Copilot access enabled to use the Multi-LLM features.
+    **Required API Keys**:
+    - `GITHUB_TOKEN`: GitHub personal access token (for GitHub Models API - Grok 3, GPT-5)
+    - `ANTHROPIC_API_KEY`: Anthropic API key (for Claude Sonnet 4)
+    - `GOOGLE_API_KEY`: Google AI API key (for Gemini 3 Pro)
 
 ## 🎮 Usage
 
@@ -143,14 +161,14 @@ The Council uses a unique **debate and arbitration** process:
 
 <div align="center">
 
-**Multi-LLM Architecture via GitHub Copilot**
+**Multi-API Architecture**
 
-| Claude Sonnet 4 | Gemini 2.5 Pro | Grok 3 |
-|:---:|:---:|:---:|
-| Anthropic | Google DeepMind | xAI |
-| Requirements & Code | Architecture & Review | Creative Analysis |
+| Claude Sonnet 4 | Gemini 3 Pro | Grok 3 | GPT-5 |
+|:---:|:---:|:---:|:---:|
+| Anthropic API | Google AI API | GitHub Models | GitHub Models |
+| Requirements & Code | Architecture & Review | Creative Analysis | Advanced Reasoning |
 
-*Orchestrated through the GitHub Copilot Chat Completions API*
+*Orchestrated through dedicated API integrations*
 
 </div>
 

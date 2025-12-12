@@ -146,15 +146,91 @@ print(f"Temperature: {settings.llm_temperature}")
 ### Environment Variables
 
 Required:
-- `GOOGLE_API_KEY`: Google Gemini API key
-- `GITHUB_TOKEN`: GitHub personal access token
+- `GITHUB_TOKEN`: GitHub personal access token (for GitHub Models API)
+- `ANTHROPIC_API_KEY`: Anthropic API key (for Claude Sonnet 4)
+- `GOOGLE_API_KEY`: Google AI API key (for Gemini 3 Pro)
 
 Optional (with defaults):
-- `LLM_MODEL`: "gemini-2.5-pro"
+- `LLM_MODEL`: "gemini-3-pro-preview"
 - `LLM_TEMPERATURE`: 0.2
 - `MAX_FEEDBACK_LOOPS`: 5
 - `DEV_QUALITY_THRESHOLD`: 75
 - `PROD_QUALITY_THRESHOLD`: 95
+
+## 🌐 Multi-API Architecture Migration
+
+### Overview
+
+NexusPrime now uses **three separate APIs** instead of a single unified API:
+
+1. **Anthropic API** - For Claude Sonnet 4 models
+2. **Google AI API** - For Gemini 3 Pro models  
+3. **GitHub Models API** - For Grok 3 and GPT-5 models
+
+### Migration Steps
+
+#### 1. Update Environment Variables
+
+**Before**:
+```env
+GOOGLE_API_KEY=your_google_key
+GITHUB_TOKEN=your_github_token
+```
+
+**After**:
+```env
+GITHUB_TOKEN=your_github_token
+ANTHROPIC_API_KEY=your_anthropic_key
+GOOGLE_API_KEY=your_google_key
+```
+
+#### 2. Get New API Keys
+
+- **Anthropic API Key**: Get from [console.anthropic.com](https://console.anthropic.com/)
+- **Google API Key**: Get from [makersuite.google.com](https://makersuite.google.com/app/apikey)
+- **GitHub Token**: Get from [github.com/settings/tokens](https://github.com/settings/tokens)
+
+#### 3. Update Dependencies (if needed)
+
+The Multi-API router automatically selects the correct API based on the model. No code changes required in your applications.
+
+```python
+# This still works - router automatically uses the right API
+from nexusprime.core.llm_router import get_llm_router
+
+router = get_llm_router()
+response, usage = router.call(
+    prompt="Your prompt",
+    agent_name="product_owner"  # Routes to Anthropic API
+)
+```
+
+#### 4. Model Mapping Changes
+
+| Agent | Old Model | New Model | New API |
+|-------|-----------|-----------|---------|
+| Product Owner | Claude Sonnet 4 | Claude Sonnet 4 | Anthropic |
+| Tech Lead | Gemini 2.5 Pro | Gemini 3 Pro | Google AI |
+| Dev Squad | Claude Sonnet 4 | Claude Sonnet 4 | Anthropic |
+| Council (Claude) | Claude Sonnet 4 | Claude Sonnet 4 | Anthropic |
+| Council (Gemini) | Gemini 2.5 Pro | Gemini 3 Pro | Google AI |
+| Council (Grok) | Grok 3 | Grok 3 | GitHub Models |
+| Council (GPT) | *(new)* | GPT-5 | GitHub Models |
+
+#### 5. Benefits of Multi-API Architecture
+
+- **Better Performance**: Direct API access without intermediate layers
+- **More Control**: Fine-tune API-specific parameters
+- **Flexibility**: Easy to add new providers
+- **Redundancy**: If one API has issues, others can still work
+- **Cost Optimization**: Choose the most cost-effective API per task
+
+### Backward Compatibility
+
+The `GitHubModelsRouter` class maintains backward compatibility:
+- Old agent names still work
+- `CopilotLLMRouter` is an alias for `GitHubModelsRouter`
+- Existing code continues to function without changes
 
 ## 📊 Dashboard Improvements
 
@@ -287,11 +363,12 @@ class CustomAgent(Agent):
 ## 📝 Migration Checklist
 
 - [ ] Update imports to use `nexusprime` package
-- [ ] Create `.env` file with required variables
+- [ ] Create `.env` file with all 3 required API keys (GITHUB_TOKEN, ANTHROPIC_API_KEY, GOOGLE_API_KEY)
 - [ ] Install new dependencies: `pip install -r requirements.txt`
-- [ ] Update any custom code to use new APIs
+- [ ] Update any custom code to use new APIs (if applicable)
 - [ ] Run tests to verify compatibility
 - [ ] Update deployment scripts if necessary
+- [ ] Verify all 3 APIs are accessible from your environment
 
 ## 🆘 Support
 
